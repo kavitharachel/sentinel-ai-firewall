@@ -40,13 +40,14 @@ docker run --rm -p 8080:8080 -e SENTINEL_PUBLIC_HOST=localhost:8080 -e SENTINEL_
 | `SENTINEL_PUBLIC_HOST` | none (loopback only) | Comma-separated public hostnames (with `:port` if non-default). Anything else gets 403. **Set this.** |
 | `PORT` | `8080` | Listen port (binds 0.0.0.0 in public mode). |
 | `SENTINEL_TRUSTED_PROXY` | `1` in the image | Trust `X-Forwarded-For` / `X-Forwarded-Proto` (set only behind a proxy that appends them). |
-| `SENTINEL_TRUSTED_HOPS` | 1 | How many proxies append to `X-Forwarded-For`; the client IP is that entry counted from the right. Wrong value = all visitors share one rate-limit bucket (too low) or spoofable IPs (too high). |
+| `SENTINEL_TRUSTED_HOPS` | 1 (use **3** on Render) | How many proxies append to `X-Forwarded-For`; the client IP is that entry counted from the right. Wrong value = all visitors share one rate-limit bucket (too low) or spoofable IPs (too high). On Render the chain is client, Cloudflare edge, Render load balancer, so the tested value is `3` (1 and 2 gave unstable keys; 3 gave one stable key that did not change with a spoofed `X-Forwarded-For`). Other hosts differ: run the check below. |
 | `SENTINEL_RATE_POST_PER_MIN` / `SENTINEL_RATE_GET_PER_MIN` | 60 / 600 | Per-IP limits (429). |
 | `SENTINEL_RATE_GLOBAL_POST_PER_MIN` | 900 | All visitors combined (429). |
 | `SENTINEL_MAX_CONCURRENT` | 8 | Simultaneous simulations (503 beyond). |
 
 ## Recommended hosting
-* Any container host with managed HTTPS (Render, Fly.io, Cloud Run, Railway). An example is `deploy/render.yaml` — verify its keys against the host's current docs.
+* Any container host with managed HTTPS (Render, Fly.io, Cloud Run, Railway). `deploy/render.yaml` is the Render example (verify its keys against the host's current docs). The deployed judges' demo ran on Render's **Free** plan (Docker, auto-deploy off): `https://sentinel-ai-firewall-g6zl.onrender.com/`. Free services sleep after about 15 minutes idle, so the first request can take about a minute.
+* On Render, `SENTINEL_PUBLIC_HOST` must be the exact generated hostname including its random suffix (here `sentinel-ai-firewall-g6zl.onrender.com`); a guessed name returns 403 "bad host".
 * **One instance only**: the rate limiter and run history are in-process. Do not autoscale above 1 without moving limits to the edge.
 * Terminate TLS at the host/CDN; set `SENTINEL_PUBLIC_HOST` to the exact public hostname (and any custom domain). HSTS is added only when the proxy says the request was HTTPS.
 * Health check: `GET /api/health` (exempt from the host allow-list so platform probes work; still rate-limited) → `{"ok": true, "writes_to_paypal": false, "public": true}`.
@@ -67,5 +68,5 @@ curl -s https://<host>/api/health                                   # note clien
 curl -s -H "X-Forwarded-For: 1.2.3.4" https://<host>/api/health     # must equal K1 (a spoofed header must not change it)
 # from a different network (phone on mobile data):  curl -s https://<host>/api/health   # must DIFFER from K1
 ```
-Same key from different networks means too few hops are trusted (everyone shares one bucket): raise `SENTINEL_TRUSTED_HOPS`.
+Same key from different networks means too few hops are trusted (everyone shares one bucket): raise `SENTINEL_TRUSTED_HOPS`. (Render: the second-network comparison has not been run; only the spoofed-header comparison was.)
 A key that changes with the spoofed header means too many hops are trusted: lower it.

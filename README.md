@@ -37,6 +37,14 @@ Open **AI Agent Workflow → Agent Console** and press one of the three one-clic
 prompt injection). They run offline with a clearly labelled rule-based fallback; no API key is needed.
 Optional: a real model can *propose* actions locally if you opt in (see `DASHBOARD.md`); it can never execute anything.
 
+## Live demo (hosted, simulation only)
+**https://sentinel-ai-firewall-g6zl.onrender.com/** (health check: `https://sentinel-ai-firewall-g6zl.onrender.com/api/health`)
+
+Hosted on Render's Free plan from `deploy/Dockerfile`; source: https://github.com/kavitharachel/sentinel-ai-firewall. The first request after about 15 minutes idle can take about a minute (free-tier cold start).
+What you see there is labelled `SIMULATED`: play money, no PayPal call, no model call (the LLM is hard-off in public mode, no API key or PayPal credential is configured on the service).
+The `LIVE-RECORDED` and `LLM-RECORDED` panels are frozen records replayed from `public_data/`; nothing on the hosted page is `LIVE`.
+Hosted-demo checks (observed through a browser on the deployed URL, not a second network): `/api/health` returned 200 with `public: true` and `writes_to_paypal: false`; the Agent Console scenarios "Unsafe refund", "False payment claim" and "Prompt injection" ran and were denied or marked CONTRADICTED with the ledger unchanged; security headers (CSP, X-Frame-Options, nosniff, HSTS and others) were present.
+
 ## Public judges' demo
 `python -m roadworthy.dashboard --public` (or `SENTINEL_PUBLIC=1`) hard-disables every LLM call, enforces a host/origin
 allow-list, rate and concurrency limits and security headers, and reads only `public_data/`. See `DEPLOY.md`.
