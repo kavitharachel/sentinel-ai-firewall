@@ -1,0 +1,16 @@
+.git
+.env*
+*.xml
+*.pem
+*.key
+evidence
+tests
+build
+_backup*
+_deploy_stage
+__pycache__
+*.pyc
+.pytest_cache
+
+Claude outputs
+*.mp4

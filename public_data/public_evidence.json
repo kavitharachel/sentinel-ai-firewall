@@ -1,0 +1,21 @@
+{
+  "amount": "2.00",
+  "captures": 0,
+  "currency": "USD",
+  "order_status": "PAYER_ACTION_REQUIRED",
+  "payee_matches_expected": true,
+  "profile_check": {
+    "checked_at": "2026-10-31T06:14:41Z",
+    "refund_scope": true,
+    "status": "OK",
+    "transaction_search_http": 403
+  },
+  "provenance": "Frozen PayPal SANDBOX responses: one human-approved sandbox order creation and read-only status checks, made earlier on the maintainer's machine. Identifiers are withheld. Not live; not production money.",
+  "recorded_at": "2026-10-31T06:19:16Z",
+  "schema": "sentinel.public-evidence/1",
+  "source_sha256": {
+    "profile_check": "41cf14a567b38521",
+    "wallet_run": "14a774614a58eaec"
+  },
+  "state": "CREATED"
+}

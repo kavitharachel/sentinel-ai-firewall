@@ -1,0 +1,23 @@
+# Render blueprint for the SENTINEL public demo. Checked against https://render.com/docs/blueprint-spec (Oct 2026).
+# Render builds from your git repo; the multi-stage Dockerfile builds the allow-listed artifact itself.
+# Create with: Dashboard > New > Blueprint. Render will ask for SENTINEL_PUBLIC_HOST (sync: false).
+services:
+  - type: web
+    name: sentinel-demo
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    plan: 0.5c-512mb           # a paid plan so judges never hit a cold start ("free" spins down when idle)
+    numInstances: 1            # rate limits are in-process: keep exactly ONE instance; never enable autoscaling
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"   # nothing deploys on git push; deploy manually after the checklist passes
+    envVars:
+      - key: SENTINEL_PUBLIC
+        value: "1"
+      - key: SENTINEL_TRUSTED_PROXY
+        value: "1"
+      - key: SENTINEL_TRUSTED_HOPS
+        value: "1"             # VERIFY after deploy with the client_key check in DEPLOY.md; raise it if your host chain has more proxies
+      - key: SENTINEL_PUBLIC_HOST
+        sync: false            # enter the exact hostname, e.g. sentinel-demo.onrender.com (and any custom domain, comma-separated)
+      # No API keys, no PayPal credentials: none are read in public mode. Render sets PORT itself (default 10000); the app binds it on 0.0.0.0.

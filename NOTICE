@@ -1,0 +1,22 @@
+SENTINEL (Roadworthy)
+Licensed under the MIT License (see LICENSE).
+
+Not affiliated with, sponsored by, or endorsed by PayPal, Inc. "PayPal" is a trademark of PayPal, Inc.,
+used here only to describe what this project is designed to work with.
+
+Third-party material
+--------------------
+data/toolkit_manifest.json is a static inventory of tool NAMES (and their read/write classification) taken from
+the public package @paypal/agent-toolkit v1.11.0 (https://github.com/paypal/agent-toolkit), which is licensed
+under the Apache License 2.0. No code from that package is included or executed. The licence text is available at
+https://www.apache.org/licenses/LICENSE-2.0 .
+
+Runtime dependencies: none (Python standard library only).
+Development-only dependencies, not distributed with the public build: pytest (MIT), Playwright for Python (Apache-2.0).
+
+Demo data
+---------
+All money shown by the interactive scenarios is simulated play money. public_data/public_evidence.json is an
+identifier-free summary of a frozen PayPal SANDBOX record (no production funds). public_data/llm_evidence.json, when present,
+is a recorded run of a hosted language model; the enforcement shown in it is simulated. The simulated gateway on this site
+does not protect any live PayPal transaction.

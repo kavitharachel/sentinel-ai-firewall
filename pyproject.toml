@@ -1,0 +1,11 @@
+[project]
+name = "roadworthy"
+version = "0.1.0"
+description = "Earned-autonomy evaluation and enforcement for AI agents that use PayPal tools (sandbox only)"
+requires-python = ">=3.9"
+dependencies = []          # standard library only at runtime
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["live: calls the real PayPal SANDBOX (read-only); skipped unless ROADWORTHY_LIVE=1"]

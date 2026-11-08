@@ -1,0 +1,29 @@
+# secrets - never commit
+paypal-sandbox-credentials.xml
+*.xml
+.env
+.env.*
+*.pem
+*.key
+# python / tooling
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+# local evidence and logs (review before ever publishing)
+evidence/
+*.log
+
+# generated / local-only (never commit)
+build/
+_backup*/
+_deploy_stage/
+public_data/llm_evidence.json.tmp
+
+# local-only deliverables and private working files (never commit)
+Claude outputs/
+*.mp4
+*.patch
+.env*
+!.env.example

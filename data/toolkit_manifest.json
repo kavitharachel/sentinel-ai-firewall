@@ -1,0 +1,624 @@
+{
+ "source": "@paypal/agent-toolkit@1.11.0 (mcp, all actions enabled)",
+ "method": "static tools/list with a dummy token; no PayPal API calls made",
+ "count": 46,
+ "tools": [
+  {
+   "name": "accept_dispute_claim",
+   "description": "",
+   "params": [
+    "dispute_id",
+    "note"
+   ],
+   "required": [
+    "dispute_id",
+    "note"
+   ]
+  },
+  {
+   "name": "activate_recurring_series",
+   "description": "",
+   "params": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "cancel_invoice_auto_reminder",
+   "description": "",
+   "params": [
+    "invoice_id"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "cancel_recurring_series",
+   "description": "",
+   "params": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "cancel_sent_invoice",
+   "description": "",
+   "params": [
+    "additional_recipients",
+    "invoice_id",
+    "note",
+    "send_to_recipient"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "cancel_subscription",
+   "description": "",
+   "params": [
+    "payload",
+    "subscription_id"
+   ],
+   "required": [
+    "payload",
+    "subscription_id"
+   ]
+  },
+  {
+   "name": "create_conditional_rules_for_invoice",
+   "description": "",
+   "params": [
+    "invoice_id",
+    "rules"
+   ],
+   "required": [
+    "invoice_id",
+    "rules"
+   ]
+  },
+  {
+   "name": "create_invoice",
+   "description": "",
+   "params": [
+    "allow_partial_payment",
+    "allow_tip",
+    "currency_code",
+    "enable_pay_by_bank",
+    "invoice_date",
+    "invoice_number",
+    "invoicer_address_line_1",
+    "invoicer_address_line_2",
+    "invoicer_business_name",
+    "invoicer_city",
+    "invoicer_country_code",
+    "invoicer_email_address",
+    "invoicer_given_name",
+    "invoicer_postal_code",
+    "invoicer_state",
+    "invoicer_surname",
+    "invoicer_tax_id",
+    "items",
+    "minimum_partial_payment_amount",
+    "note",
+    "pay_by_bank_exclusive_above_threshold",
+    "primary_recipients",
+    "reference",
+    "shipping_cost",
+    "theme_color"
+   ],
+   "required": [
+    "currency_code",
+    "items",
+    "primary_recipients"
+   ]
+  },
+  {
+   "name": "create_order",
+   "description": "",
+   "params": [
+    "cancelUrl",
+    "currencyCode",
+    "discount",
+    "items",
+    "notes",
+    "returnUrl",
+    "shippingAddress",
+    "shippingCost"
+   ],
+   "required": [
+    "currencyCode",
+    "items"
+   ]
+  },
+  {
+   "name": "create_product",
+   "description": "",
+   "params": [
+    "category",
+    "description",
+    "home_url",
+    "image_url",
+    "name",
+    "type"
+   ],
+   "required": [
+    "name",
+    "type"
+   ]
+  },
+  {
+   "name": "create_recurring_series",
+   "description": "",
+   "params": [
+    "allow_partial_payment",
+    "allow_tip",
+    "currency_code",
+    "interval_count",
+    "interval_unit",
+    "invoicer_address_line_1",
+    "invoicer_address_line_2",
+    "invoicer_business_name",
+    "invoicer_city",
+    "invoicer_country_code",
+    "invoicer_email_address",
+    "invoicer_given_name",
+    "invoicer_postal_code",
+    "invoicer_state",
+    "invoicer_surname",
+    "invoicer_tax_id",
+    "items",
+    "minimum_partial_payment_amount",
+    "note",
+    "primary_recipients",
+    "reference",
+    "shipping_cost",
+    "start_series_date",
+    "total_cycles"
+   ],
+   "required": [
+    "currency_code",
+    "interval_count",
+    "interval_unit",
+    "primary_recipients",
+    "start_series_date"
+   ]
+  },
+  {
+   "name": "create_refund",
+   "description": "",
+   "params": [
+    "amount",
+    "capture_id",
+    "invoice_id",
+    "note_to_payer"
+   ],
+   "required": [
+    "capture_id"
+   ]
+  },
+  {
+   "name": "create_shipment_tracking",
+   "description": "",
+   "params": [
+    "carrier",
+    "order_id",
+    "status",
+    "tracking_number",
+    "transaction_id"
+   ],
+   "required": [
+    "tracking_number",
+    "transaction_id"
+   ]
+  },
+  {
+   "name": "create_subscription",
+   "description": "",
+   "params": [
+    "application_context",
+    "plan_id",
+    "quantity",
+    "shipping_amount",
+    "subscriber"
+   ],
+   "required": [
+    "plan_id"
+   ]
+  },
+  {
+   "name": "create_subscription_plan",
+   "description": "",
+   "params": [
+    "billing_cycles",
+    "description",
+    "name",
+    "payment_preferences",
+    "product_id",
+    "taxes"
+   ],
+   "required": [
+    "billing_cycles",
+    "name",
+    "product_id"
+   ]
+  },
+  {
+   "name": "delete_invoice",
+   "description": "",
+   "params": [
+    "invoice_id"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "delete_recurring_series",
+   "description": "",
+   "params": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "generate_invoice_number",
+   "description": "",
+   "params": [],
+   "required": []
+  },
+  {
+   "name": "generate_invoice_qr_code",
+   "description": "",
+   "params": [
+    "height",
+    "invoice_id",
+    "width"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "get_dispute",
+   "description": "",
+   "params": [
+    "dispute_id"
+   ],
+   "required": [
+    "dispute_id"
+   ]
+  },
+  {
+   "name": "get_invoice",
+   "description": "",
+   "params": [
+    "invoice_id"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "get_merchant_insights",
+   "description": "",
+   "params": [
+    "end_date",
+    "insight_type",
+    "start_date",
+    "time_interval"
+   ],
+   "required": [
+    "end_date",
+    "insight_type",
+    "start_date",
+    "time_interval"
+   ]
+  },
+  {
+   "name": "get_order",
+   "description": "",
+   "params": [
+    "id"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  {
+   "name": "get_recurring_series",
+   "description": "",
+   "params": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "get_refund",
+   "description": "",
+   "params": [
+    "refund_id"
+   ],
+   "required": [
+    "refund_id"
+   ]
+  },
+  {
+   "name": "get_shipment_tracking",
+   "description": "",
+   "params": [
+    "order_id",
+    "transaction_id"
+   ],
+   "required": []
+  },
+  {
+   "name": "list_disputes",
+   "description": "",
+   "params": [
+    "dispute_state",
+    "disputed_transaction_id",
+    "page",
+    "page_size"
+   ],
+   "required": []
+  },
+  {
+   "name": "list_invoices",
+   "description": "",
+   "params": [
+    "page",
+    "page_size",
+    "total_required"
+   ],
+   "required": []
+  },
+  {
+   "name": "list_products",
+   "description": "",
+   "params": [
+    "page",
+    "page_size",
+    "total_required"
+   ],
+   "required": []
+  },
+  {
+   "name": "list_subscription_plans",
+   "description": "",
+   "params": [
+    "page",
+    "page_size",
+    "product_id",
+    "total_required"
+   ],
+   "required": []
+  },
+  {
+   "name": "list_transactions",
+   "description": "",
+   "params": [
+    "end_date",
+    "page",
+    "page_size",
+    "search_months",
+    "start_date",
+    "transaction_id",
+    "transaction_status"
+   ],
+   "required": []
+  },
+  {
+   "name": "pay_order",
+   "description": "",
+   "params": [
+    "id"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  {
+   "name": "record_payment_for_invoice",
+   "description": "",
+   "params": [
+    "amount",
+    "invoice_id",
+    "method",
+    "note",
+    "payment_date",
+    "payment_date_time",
+    "payment_id",
+    "shipping_info"
+   ],
+   "required": [
+    "invoice_id",
+    "method"
+   ]
+  },
+  {
+   "name": "record_refund_for_invoice",
+   "description": "",
+   "params": [
+    "amount",
+    "invoice_id",
+    "method",
+    "refund_date"
+   ],
+   "required": [
+    "invoice_id",
+    "method"
+   ]
+  },
+  {
+   "name": "search_invoicing",
+   "description": "",
+   "params": [
+    "invoice_filters",
+    "page",
+    "page_size",
+    "recurring_series_filters",
+    "resource_type",
+    "total_required"
+   ],
+   "required": [
+    "resource_type"
+   ]
+  },
+  {
+   "name": "send_invoice",
+   "description": "",
+   "params": [
+    "additional_recipients",
+    "invoice_id",
+    "note",
+    "send_to_recipient"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "send_invoice_reminder",
+   "description": "",
+   "params": [
+    "additional_recipients",
+    "invoice_id",
+    "note",
+    "subject"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "setup_invoice_auto_reminders",
+   "description": "",
+   "params": [
+    "configurations"
+   ],
+   "required": []
+  },
+  {
+   "name": "show_product_details",
+   "description": "",
+   "params": [
+    "product_id"
+   ],
+   "required": [
+    "product_id"
+   ]
+  },
+  {
+   "name": "show_subscription_details",
+   "description": "",
+   "params": [
+    "get_additional_details",
+    "subscription_id"
+   ],
+   "required": [
+    "subscription_id"
+   ]
+  },
+  {
+   "name": "show_subscription_plan_details",
+   "description": "",
+   "params": [
+    "plan_id"
+   ],
+   "required": [
+    "plan_id"
+   ]
+  },
+  {
+   "name": "update_invoice_auto_reminder",
+   "description": "",
+   "params": [
+    "interval",
+    "notification",
+    "reminder_configuration_id",
+    "repetition",
+    "status",
+    "type"
+   ],
+   "required": [
+    "interval",
+    "reminder_configuration_id",
+    "repetition",
+    "type"
+   ]
+  },
+  {
+   "name": "update_invoicing",
+   "description": "",
+   "params": [
+    "invoice_update",
+    "recurring_series_update",
+    "resource_type"
+   ],
+   "required": [
+    "resource_type"
+   ]
+  },
+  {
+   "name": "update_plan",
+   "description": "",
+   "params": [
+    "auto_bill_outstanding",
+    "description",
+    "name",
+    "operations",
+    "payment_failure_threshold",
+    "percentage",
+    "plan_id",
+    "setup_fee",
+    "setup_fee_failure_action"
+   ],
+   "required": [
+    "operations",
+    "plan_id"
+   ]
+  },
+  {
+   "name": "update_product",
+   "description": "",
+   "params": [
+    "operations",
+    "product_id"
+   ],
+   "required": [
+    "operations",
+    "product_id"
+   ]
+  },
+  {
+   "name": "update_subscription",
+   "description": "",
+   "params": [
+    "auto_bill_outstanding",
+    "currency_code",
+    "custom_id",
+    "fixed_price",
+    "outstanding_balance",
+    "payment_failure_threshold",
+    "shipping_address",
+    "shipping_amount",
+    "subscription_id",
+    "taxes_inclusive",
+    "taxes_percentage"
+   ],
+   "required": [
+    "subscription_id"
+   ]
+  }
+ ]
+}
