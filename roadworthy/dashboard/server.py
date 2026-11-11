@@ -23,6 +23,7 @@ FILES = {"/": ("index.html", "text/html; charset=utf-8"), "/app.css": ("app.css"
 PERMISSIONS = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), clipboard-read=(), interest-cohort=()"
 CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 MAX_BODY = 8192
+DRAIN_MAX = 65536          # an early rejection first consumes (at most) this much of the unread request body; see _drain
 
 
 class BadRequest(Exception):
@@ -127,6 +128,7 @@ def route_get(path: str, qs: Dict[str, list], live_dir: Optional[Path]) -> Any:
     if path == "/api/llm/status": return service.llm_status()
     if path == "/api/console/info": return service.console_info()
     if path == "/api/llm-evidence": return service.llm_evidence_info()
+    if path == "/api/bench/info": return service.bench_info()
     if path == "/api/health": return {"ok": True, "writes_to_paypal": False, "public": service.is_public()}
     raise KeyError(path)
 
@@ -140,6 +142,9 @@ def route_post(path: str, body: Dict[str, Any]) -> Any:
     if path == "/api/timemachine":
         return service.timemachine(str(body.get("agent", "eager")), bool(body.get("gateway", True)), bool(body.get("verifier", True)), bool(body.get("human", False)), sess)
     if path == "/api/trust": return service.trust(str(body.get("capability", "order.create")), [str(e) for e in (body.get("events") or [])])
+    if path == "/api/bench/run": return service.bench_run(body)
+    if path == "/api/bench/verify": return service.bench_verify(body)
+    if path == "/api/bench/forge": return service.bench_forge(body)
     if path == "/api/attacks/run":
         return run_all() if body.get("id") == "all" else run_attack(str(body.get("id")))
     raise KeyError(path)
@@ -173,7 +178,29 @@ def make_handler(port_getter, live_dir: Optional[Path], policy: Optional[PublicP
                 return False
             return True
 
+        def _drain(self) -> None:
+            """Consume (bounded) the unread request body before ANY reply to a request that carries one. Answering and closing with unread bytes makes
+            some stacks (Windows) answer with a TCP reset, so the client sees a dropped connection instead of the 4xx. Bodies larger than DRAIN_MAX
+            are not read; the connection is closed instead. This only ever reads what the client chose to send, up to DRAIN_MAX, within the socket timeout."""
+            if self.command in ("GET", "HEAD") or getattr(self, "_drained", False):
+                return
+            self._drained = True
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                n = 0
+            if n <= 0:
+                return
+            if n > DRAIN_MAX:
+                self.close_connection = True
+                return
+            try:
+                self.rfile.read(n)
+            except OSError:
+                self.close_connection = True
+
         def _send(self, code: int, ctype: str, data: bytes, extra: Optional[Dict[str, str]] = None) -> None:
+            self._drain()
             self.send_response(code)
             self.send_header("Content-Type", ctype); self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-store"); self.send_header("Content-Security-Policy", CSP)
@@ -212,6 +239,7 @@ def make_handler(port_getter, live_dir: Optional[Path], policy: Optional[PublicP
                 return self._json(400, {"error": str(e)[:120]})
 
         def do_POST(self):  # noqa: N802
+            self._drained = False
             if not self._host_ok():
                 return self._json(403, {"error": "bad host"})
             origin = self.headers.get("Origin")
@@ -236,13 +264,14 @@ def make_handler(port_getter, live_dir: Optional[Path], policy: Optional[PublicP
                 n = int(self.headers.get("Content-Length") or 0)
                 if n < 0 or n > MAX_BODY:
                     return self._json(413, {"error": "body too large"})
-                body = json.loads(self.rfile.read(n).decode() or "{}")
+                raw = self.rfile.read(n); self._drained = True
+                body = json.loads(raw.decode() or "{}")
                 if not isinstance(body, dict):
                     raise BadRequest
                 return self._json(200, route_post(urlparse(self.path).path, body))
             except service.ServiceError as e:
                 return self._json(e.status, {"error": e.message})
-            except (BadRequest, ValueError, TypeError):
+            except (BadRequest, ValueError, TypeError, RecursionError):        # RecursionError: deeply nested JSON on interpreters/platforms whose parser limit is lower
                 return self._json(400, {"error": "bad request"})
             except KeyError:
                 return self._json(404, {"error": "not found"})

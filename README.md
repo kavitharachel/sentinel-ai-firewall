@@ -25,10 +25,16 @@ recorded evidence, and (3) lets permissions be **earned from evidence and revoke
 >   play-money merchant. They do not call PayPal. The public demo cannot import the write path at all.
 > * **Not built / not claimed:** production money movement, live-mode (non-sandbox) PayPal access, a gateway deployed in front of a real merchant's
 >   PayPal account, or any claim of protection for real merchants. Refunds are not implemented in the live path.
-> * **Verification status of live runs:** the PayPal read-only check (OAuth + Transaction Search) was run by the maintainer on 2026-11-06 and is
->   `LIVE, USER-REPORTED` (not independently reproduced). A fresh hosted-model smoke test is separate and is labelled only after it is run.
+> * **Verification status of live runs (two separate observations, not interchangeable):** (1) RECORDED: the US sandbox app's profile check on 2026-10-31
+>   (`evidence/us/profile_check.json`, summarised in `public_data/public_evidence.json`) got OAuth working but Transaction Search returned HTTP 403.
+>   (2) `LIVE, USER-REPORTED`: a read-only run by the maintainer on 2026-11-06 reported Transaction Search HTTP 200; no evidence file was saved for it, so it is
+>   not independently reproduced and it is not shown as proof anywhere in the demo. A fresh hosted-model smoke test is separate and is labelled only after it is run.
 
 ## Try it
+On the Command Center, the **Start here** strip gives a 90-second path: (1) press "Unsafe refund" in the AI Agent Workflow, (2) open the recorded claim "the payment was captured" versus the recorded PayPal sandbox order (0 captures), (3) watch an earned permission get revoked, (4) open the **Judge Bench**. The claim in step 2 is an illustrative claim written by the dashboard and checked against real recorded sandbox state.
+
+**Judge Bench** (SIMULATED): type any tool call and the real deterministic gateway decides in a fixed order (environment, known tool, capability ceiling, hard limits, licence, approval), with a six-layer trace, even for the strongest possible licence. Each decision has a receipt (input, decision, policy digest, sha256). Verifying a receipt recomputes the hash and re-runs the gateway on the stored input, so a decision that was edited and re-hashed is still rejected. Receipts are tamper-evident, not tamper-proof: they carry no signature. The bench executes nothing and contacts no service. Missing, null or ambiguous currencies on refunds and orders are denied (fail closed).
+
 ```powershell
 python -m roadworthy.dashboard            # http://127.0.0.1:8765 (loopback only, no dependencies)
 python -m roadworthy.dashboard --selftest # every attack, headless; exit 1 if any gets through
@@ -64,7 +70,7 @@ On 2026-11-08 these five cases (2.00 USD, EUR, 2.01, 0, NaN) were also run with 
 
 ## Safety boundaries (enforced in code, covered by tests)
 - Sandbox host is a constant; any other host is refused. The REST client (`client.py`) exposes `get()` only.
-- The only PayPal write path (`wallet_run.py`, sandbox order creation and capture of the same 2.00 USD order) is separate, requires human approval through the gateway,
+- The only PayPal write path (`wallet_run.py`: creation of a 2.00 USD sandbox order; a gated capture step exists in the code but has never been run, and the recorded order shows 0 captures) is separate, requires human approval through the gateway,
   and is **not importable** from the dashboard or the public build (an AST test and a build check enforce this).
 - Hard limits sit above every licence: refund ≤ $25, order ≤ $100, USD only. Results can lower a permission, never lift it past the ceiling.
 - Credentials are read from a DPAPI-encrypted file on the maintainer's Windows machine, in memory only; never logged, never sent to a model, never in the public build.
@@ -88,7 +94,7 @@ python -m pytest
 ```
 Runtime has **no third-party dependencies**.
 
-Last verified run (offline, 2026-11-08, fresh copy of the project): 505 tests collected, 504 passed, 0 failed, 1 skipped. The skipped test is the opt-in live PayPal sandbox check (`ROADWORTHY_LIVE=1`), which was not part of this run. The Attack Lab self-test (`python -m roadworthy.dashboard --selftest`) stops 16/16 scenarios in the simulated world. No live PayPal call or hosted-LLM call is part of these numbers.
+Last verified run (offline, 2026-11-10, fresh copy of the project, including the Start-here, Judge Bench, endpoint-security and view-race browser/HTTP tests): 598 tests collected, 597 passed, 0 failed, 1 skipped. The skipped test is the opt-in live PayPal sandbox check (`ROADWORTHY_LIVE=1`), which was not part of this run. The Attack Lab self-test (`python -m roadworthy.dashboard --selftest`) stops 16/16 scenarios in the simulated world. No live PayPal call or hosted-LLM call is part of these numbers.
 
 ## Licence
 MIT (see `LICENSE`). Not affiliated with or endorsed by PayPal; see `NOTICE` for third-party attributions.

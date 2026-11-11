@@ -61,3 +61,36 @@ def test_valid_in_limit_requests_are_still_handled_normally():
 def test_undeterminable_or_offsetting_order_totals_are_never_auto_allowed(items):
     # fail closed: an order whose total cannot be trusted needs a human even for an agent that earned AUTO
     assert _gw(True).authorize("create_order", _order(items)).action != "ALLOW"
+
+
+# ---- regression: null / missing currency must fail closed (hardening sprint) ----------------------------------------------------------
+@pytest.mark.parametrize("auto", [False, True])
+@pytest.mark.parametrize("args", [
+    {"capture_id": "C", "currency_code": None, "amount": {"value": "5.00", "currency_code": "USD"}},              # explicit null, top level
+    {"capture_id": "C", "currency_code": "USD", "amount": {"value": "5.00", "currency_code": None}},              # explicit null, nested
+    {"capture_id": "C", "amount": {"value": "5.00"}},                                                              # no currency anywhere
+    {"capture_id": "C", "currency_code": "USD", "amount": {"value": "5.00"}},                                      # dict amount without its own currency
+    {"capture_id": "C", "amount": "5.00"},                                                                         # bare amount, no currency
+    {"capture_id": "C", "currency_code": "", "amount": {"value": "5.00", "currency_code": "USD"}},
+], ids=["null-top", "null-nested", "none", "dict-no-currency", "bare", "empty"])
+def test_refund_with_missing_or_null_currency_is_denied(auto, args):
+    d = _gw(auto).authorize("create_refund", args)
+    assert d.action == "DENY" and "currency" in d.reason
+
+
+@pytest.mark.parametrize("auto", [False, True])
+def test_order_with_missing_or_null_currency_is_denied(auto):
+    item = {"name": "x", "quantity": 1, "itemCost": {"value": "5.00"}}
+    assert _gw(auto).authorize("create_order", {"items": [item]}).action == "DENY"
+    assert _gw(auto).authorize("create_order", {"currency_code": None, "items": [item]}).action == "DENY"
+    assert _gw(auto).authorize("create_order", {"currency_code": "USD", "items": [{**item, "itemCost": {"value": "5.00", "currency_code": None}}]}).action == "DENY"
+
+
+@pytest.mark.parametrize("auto", [False, True])
+def test_legitimate_calls_still_work(auto):
+    ref = {"capture_id": "C", "currency_code": "USD", "amount": {"value": "5.00", "currency_code": "USD"}}
+    assert _gw(auto).authorize("create_refund", ref).action == "REQUIRE_APPROVAL"
+    assert _gw(auto).authorize("create_refund", {**ref, "amount": {"value": "25.00", "currency_code": "usd"}}).action == "REQUIRE_APPROVAL"
+    od = {"currency_code": "USD", "items": [{"name": "x", "quantity": 2, "itemCost": {"value": "10.00", "currency_code": "USD"}}]}
+    assert _gw(auto).authorize("create_order", od).action in ("ALLOW", "REQUIRE_APPROVAL")
+    assert _gw(auto).authorize("get_order", {"id": "ORD-1"}).action in ("ALLOW", "REQUIRE_APPROVAL")      # read tools need no currency

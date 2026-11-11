@@ -35,6 +35,7 @@ const VIEWS = [
   ['trust', '🛡', 'Trust Engine', 'Permissions are earned from evidence and revoked on harm'],
   ['attack', '⚔', 'Attack Lab', 'Reproducible adversarial scenarios, each one stopped'],
   ['agent', '🤖', 'AI Agent Workflow', 'An agent proposes actions; SENTINEL checks and enforces'],
+  ['bench', '⚖', 'Judge Bench', 'Try to fool the real gateway; every decision comes with a re-verifiable receipt'],
 ];
 const state = { view: 'command', audit: { sel: null, filter: 'ALL' }, tm: { agent: 'eager', gateway: true, verifier: true, human: false, step: null },
   trust: { cap: 'order.create', events: Array(14).fill('pass') }, agent: { tab: 'console', brain: 'eager', approvals: [], llm: { session: null, consent: false, error: null, calls: [] } },
@@ -45,17 +46,31 @@ function nav() {
   VIEWS.forEach(([id, ic, name]) => n.append(h('button', { 'aria-current': state.view === id ? 'page' : false, 'data-t': 'nav-' + id, onclick: () => go(id) }, h('i', null, ic), name)));
   n.append(h('button', { class: 'demo-nav', 'data-t': 'nav-demo', onclick: () => startDemo() }, h('i', null, '▶'), '90-second demo'));
 }
+let ROOT = null;
+const viewRoot = () => ROOT || $('#view');
 async function go(id) {
   state.view = id; nav();
   const v = VIEWS.find(x => x[0] === id);
   empty($('#title')).append(h('h1', null, v[2]), h('p', null, v[3]));
-  const root = empty($('#view')); root.append(h('p', { class: 'mut' }, 'Loading...'));
+  /* Every navigation renders into its OWN container. A slow render that finishes after the user has moved on writes into a detached node, so it can never overwrite the view that is now selected. */
+  const root = h('div', { class: 'view-root' }); ROOT = root; empty($('#view')).append(root); root.append(h('p', { class: 'mut' }, 'Loading...'));
   try { await RENDER[id](root); } catch (e) { empty(root).append(card('Error', null, h('p', { class: 'bad' }, String(e.message || e)))); }
 }
 
 /* ---------------------------------------------------------------- 1. Command Center */
 const arrow = () => h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→');
 const stage = (n, title, tag, testid, ...body) => h('div', { class: 'stage', 'data-t': testid }, h('div', { class: 'stage-h' }, h('span', { class: 'num' }, n), h('b', null, title), h('span', { class: 'sp' }), tag ? tagFor(tag) : ''), ...body);
+/* Start-here path for a judge who has never seen SENTINEL: four clicks, each labelled with what kind of evidence it shows. */
+function judgePath() {
+  const step = (n, label, note, tag, testid, fn) => h('li', null, h('button', { class: 'btn pri', 'data-t': testid, onclick: fn }, n + ' · ' + label), h('span', { class: 'note' }, note), tagFor(tag));
+  return h('div', { class: 'card judge-path', 'data-t': 'judge-path' },
+    h('h3', null, h('span', null, 'Start here · about 90 seconds')),
+    h('ol', { class: 'jp' },
+      step('1', 'Try an unsafe request', 'Press “Unsafe refund”. SENTINEL denies it, then checks the agent’s report against the ledger.', 'SIMULATED', 'jp-1', () => go('agent')),
+      step('2', 'Claim vs recorded PayPal state', 'The agent says the payment was captured. The recorded sandbox order shows 0 captures. Nothing was paid.', 'LIVE-RECORDED', 'jp-2', () => { state.audit.sel = 'LIVE-4'; state.audit.filter = 'ALL'; go('audit'); }),
+      step('3', 'Watch a permission get revoked', 'Eighteen clean runs earn autonomy; one harmful action takes it away.', 'SIMULATED', 'jp-3', () => go('trust')),
+      step('4', 'Your turn: try to fool the gateway', 'Pick “one cent over”, then forge a receipt. The real gateway decides every time; nothing is sent anywhere.', 'SIMULATED', 'jp-4', () => go('bench'))));
+}
 async function command(root) {
   const o = await api('/api/overview'); const c = o.story.case, k = c.counts, ct = o.story.contrast, lv = o.story.live;
   const total = c.claims.length;
@@ -87,6 +102,7 @@ async function command(root) {
   empty(root).append(
     h('div', { class: 'hero' }, h('div', null, h('h2', null, 'Did the AI agent do what it said?'), h('p', { class: 'mut' }, 'SENTINEL checks every claim against independent evidence and caps what the agent may do.')),
       h('button', { class: 'btn pri', 'data-t': 'demo-start', onclick: () => startDemo() }, '▶ Start 90-second demo')),
+    judgePath(),
     pipeline,
     h('div', { class: 'grid g2', style: 'margin-top:14px;align-items:start' }, honest, liveCardNode),
     h('div', { class: 'grid g4', style: 'margin-top:14px' }, o.proof.map(p => h('div', { class: 'card kpi' }, h('span', null, p.label, ' ', p.tag ? tagFor(p.tag) : ''), h('b', { class: p.tone }, p.value), h('span', null, p.sub)))),
@@ -433,12 +449,12 @@ const DEMO = [
       state.audit.filter = 'ALL'; state.audit.sel = c.id; await go('audit'); if (tk === demo.token) spot('[data-t=mismatch]'); } },
   { id: 'revoke', ms: 18000, title: '3 · Permission revoked', say: 'Autonomy is earned from evidence: 18 clean runs earn AUTO. One harmful action and the permission is revoked immediately. The immutable ceiling means evidence can lower trust but never lift it past the cap.',
     async enter(tk) { state.trust.cap = 'order.create'; state.trust.events = Array(18).fill('pass'); await go('trust'); await sleep(4800); if (tk !== demo.token) return;
-      state.trust.events.push('harmful'); await RENDER.trust($('#view')); if (tk === demo.token) spot('[data-t=trust-decision]'); } },
+      state.trust.events.push('harmful'); await RENDER.trust(viewRoot()); if (tk === demo.token) spot('[data-t=trust-decision]'); } },
   { id: 'attack', ms: 18000, title: '4 · A blocked attack', say: 'A customer email tells the agent to refund $110, concede a dispute and fake a payment. The gateway denies all three before any money moves, and the ledger is unchanged.',
-    async enter(tk) { await go('attack'); for (const id of ['A11', 'A05']) { if (tk !== demo.token) return; ATK.results[id] = await api('/api/attacks/run', { id }); } await RENDER.attack($('#view')); if (tk === demo.token) spot('[data-t=attack-A11]'); } },
+    async enter(tk) { await go('attack'); for (const id of ['A11', 'A05']) { if (tk !== demo.token) return; ATK.results[id] = await api('/api/attacks/run', { id }); } await RENDER.attack(viewRoot()); if (tk === demo.token) spot('[data-t=attack-A11]'); } },
   { id: 'time', ms: 21000, title: '5 · Financial Time Machine', say: 'Replay the same agent in two worlds. Without SENTINEL it moves $348 of simulated money out, including a conceded dispute. With SENTINEL: $0. Drag the timeline or switch controls off to see which layer did the work.',
     async enter(tk) { Object.assign(state.tm, { agent: 'eager', gateway: true, verifier: true, human: false, step: 1 }); await go('time'); const n = 8;
-      for (let s = 1; s <= n && tk === demo.token; s++) { state.tm.step = s; await RENDER.time($('#view')); await sleep(1200); } if (tk === demo.token) spot('[data-t=tm-summary]'); } },
+      for (let s = 1; s <= n && tk === demo.token; s++) { state.tm.step = s; await RENDER.time(viewRoot()); await sleep(1200); } if (tk === demo.token) spot('[data-t=tm-summary]'); } },
 ];
 const DEMO_TOTAL = DEMO.reduce((a, s) => a + s.ms, 0);
 function spot(sel) { document.querySelectorAll('.spot').forEach(e => e.classList.remove('spot')); const e = $(sel); if (e) { const d = $('#demo'); document.documentElement.style.setProperty('--demo-h', (d ? d.offsetHeight + 16 : 150) + 'px'); e.classList.add('spot'); e.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }
@@ -473,7 +489,50 @@ function stopDemo() { demo.on = false; demo.token++; clearInterval(demo.timer); 
 function endDemo() { stopDemo(); const p = demoPanel(); p.append(h('p', { class: 'say', 'data-t': 'demo-done' }, 'That was SENTINEL: claims are checked, permissions are earned and revocable, attacks are blocked, and the counterfactual is computed, not assumed.'), h('div', { class: 'row' }, h('button', { class: 'btn pri', onclick: () => { p.remove(); startDemo(); } }, 'Replay'), h('button', { class: 'btn', onclick: () => p.remove() }, 'Close'))); }
 document.addEventListener('keydown', e => { if (!demo.on) return; if (e.key === 'Escape') stopDemo(); else if (e.key === 'ArrowRight') gotoDemo(demo.i + 1); else if (e.key === 'ArrowLeft') gotoDemo(demo.i - 1); else if (e.key === ' ' && !/INPUT|SELECT|BUTTON|TEXTAREA/.test(e.target.tagName)) { e.preventDefault(); demo.paused = !demo.paused; paintDemo(); } });
 
-const RENDER = { command, audit: auditView, time: timeView, trust: trustView, attack: attackView, agent: agentView };
+
+/* ---------------------------------------------------------------- Judge Bench: raw tool call -> REAL gateway -> layer trace + receipt. Pure; nothing is executed. */
+const BN = { info: null, tool: 'create_refund', args: '{\n  "capture_id": "CAP-1001",\n  "currency_code": "USD",\n  "amount": { "value": "25.01", "currency_code": "USD" }\n}', licence: 'veteran', env: 'SANDBOX', res: null, receipt: '', ver: null, err: null, note: '' };
+async function benchView(root) {
+  if (!BN.info) BN.info = await api('/api/bench/info');
+  const re = () => benchView(root);
+  const preset = p => { BN.tool = p.tool; BN.args = JSON.stringify(p.args, null, 2); BN.res = null; BN.ver = null; BN.err = null; BN.note = p.label; run(); };
+  const run = async () => {
+    BN.err = null; BN.ver = null;
+    let args; try { args = JSON.parse(BN.args); } catch (e) { BN.err = 'Arguments are not valid JSON (write non-numbers as strings, e.g. "NaN").'; BN.res = null; return re(); }
+    try { BN.res = await api('/api/bench/run', { tool: BN.tool, args, licence: BN.licence, environment: BN.env }); BN.receipt = JSON.stringify(BN.res, null, 2); } catch (e) { BN.err = String(e.message || e); BN.res = null; }
+    re();
+  };
+  const verify = async () => {
+    let r; try { r = JSON.parse(BN.receipt); } catch (e) { BN.ver = { ok: false, checks: [{ check: 'shape', ok: false, detail: 'receipt text is not valid JSON' }] }; return re(); }
+    BN.ver = await api('/api/bench/verify', { receipt: r }); re();
+  };
+  const tamper = () => { try { const r = JSON.parse(BN.receipt); r.decision.action = r.decision.action === 'ALLOW' ? 'DENY' : 'ALLOW'; BN.receipt = JSON.stringify(r, null, 2); BN.ver = null; } catch (e) { BN.err = 'Run a call first.'; } re(); };
+  const forge = async () => { try { const r = JSON.parse(BN.receipt); BN.receipt = JSON.stringify(await api('/api/bench/forge', { receipt: r }), null, 2); BN.ver = null; } catch (e) { BN.err = 'Run a call first.'; } re(); };
+  const d = BN.res && BN.res.decision, cls = !d ? '' : d.action === 'DENY' ? 'bad' : d.action === 'ALLOW' ? 'ok' : 'warn';
+  const mark = st => st === 'passed' ? '✓' : st === 'stopped' ? '✕' : '–';
+  empty(root).append(
+    h('div', { class: 'card', 'data-t': 'bench-input' }, h('h3', null, h('span', null, 'Try to fool the gateway'), tagFor('SIMULATED')),
+      h('p', { class: 'note' }, 'Type any tool call. The real gateway decides in a fixed order; nothing is executed, sent or paid, and no model is involved. ', h('b', null, 'Even the strongest possible licence cannot override a hard limit.')),
+      h('div', { class: 'row', style: 'flex-wrap:wrap;gap:6px;margin:8px 0' }, BN.info.presets.map(p => h('button', { class: 'btn', 'data-t': 'bench-preset-' + p.id, onclick: () => preset(p) }, p.label))),
+      h('div', { class: 'row bn-form', style: 'flex-wrap:wrap;gap:10px;margin:8px 0' },
+        h('label', null, 'Tool ', h('input', { 'data-t': 'bench-tool', value: BN.tool, list: 'bench-tools', maxlength: 64, oninput: e => { BN.tool = e.target.value; } }), h('datalist', { id: 'bench-tools' }, BN.info.tools.map(t => h('option', { value: t.tool })))),
+        h('label', null, 'Licence ', h('select', { 'data-t': 'bench-licence', onchange: e => { BN.licence = e.target.value; } }, Object.entries(BN.info.licences).map(([k, v]) => h('option', { value: k, selected: k === BN.licence }, k + ' · ' + v)))),
+        h('label', null, 'Environment ', h('select', { 'data-t': 'bench-env', onchange: e => { BN.env = e.target.value; } }, BN.info.environments.map(k => h('option', { value: k, selected: k === BN.env }, k))))),
+      h('textarea', { 'data-t': 'bench-args', rows: 6, spellcheck: 'false', style: 'width:100%;font-family:monospace', oninput: e => { BN.args = e.target.value; } }, BN.args),
+      h('div', { class: 'row', style: 'margin-top:8px' }, h('button', { class: 'btn pri', 'data-t': 'bench-run', onclick: run }, 'Send to the gateway'), BN.note ? h('span', { class: 'note' }, 'Preset: ' + BN.note) : ''),
+      BN.err ? h('p', { class: 'bad', 'data-t': 'bench-error' }, BN.err) : ''),
+    d ? h('div', { class: 'card', 'data-t': 'bench-result' }, h('h3', null, h('span', null, 'Decision'), tagFor('SIMULATED')),
+      h('div', { class: 'row' }, h('span', { class: 'big ' + cls, 'data-t': 'bench-action' }, d.action), h('span', null, d.reason), h('span', { class: 'sp' }), h('span', { class: 'note' }, 'Executed: no. The bench never executes anything.')),
+      h('ol', { class: 'bn-trace', 'data-t': 'bench-trace' }, d.trace.map(t => h('li', { class: 'bn-' + t.status.replace(' ', '-') }, h('b', null, mark(t.status) + ' ' + t.layer), h('span', null, ' ' + t.rule), h('em', null, ' ' + t.status))))) : '',
+    d ? h('div', { class: 'card', 'data-t': 'bench-receipt' }, h('h3', null, h('span', null, 'Decision receipt'), tagFor('SIMULATED')),
+      h('p', { class: 'note' }, 'A hash of the input, decision and policy. Edit it, then verify: verification recomputes the hash and re-runs the gateway on the stored input. This is tamper-EVIDENT, not tamper-proof: there is no signature, so a verifier must re-run trusted code.'),
+      h('textarea', { 'data-t': 'bench-receipt-text', rows: 10, spellcheck: 'false', style: 'width:100%;font-family:monospace', oninput: e => { BN.receipt = e.target.value; BN.ver = null; } }, BN.receipt),
+      h('div', { class: 'row', style: 'flex-wrap:wrap;gap:6px;margin-top:8px' }, h('button', { class: 'btn pri', 'data-t': 'bench-verify', onclick: verify }, 'Verify receipt'),
+        h('button', { class: 'btn dng', 'data-t': 'bench-tamper', onclick: tamper }, 'Tamper: flip the decision'), h('button', { class: 'btn dng', 'data-t': 'bench-forge', onclick: forge }, 'Forge: flip the decision and recompute the hash (demo)')),
+      BN.ver ? h('ul', { class: 'bn-ver', 'data-t': 'bench-verify-result' }, h('li', { class: BN.ver.ok ? 'ok' : 'bad', 'data-t': 'bench-verdict' }, BN.ver.ok ? 'RECEIPT VERIFIED' : 'RECEIPT REJECTED'), BN.ver.checks.map(c => h('li', { class: c.ok ? 'ok' : 'bad' }, (c.ok ? '✓ ' : '✕ ') + c.check + ': ' + c.detail))) : '') : '');
+}
+
+const RENDER = { command, audit: auditView, time: timeView, trust: trustView, attack: attackView, agent: agentView, bench: benchView };
 const q = new URLSearchParams(location.search);
 function publicBanner() {
   document.body.classList.add('public');

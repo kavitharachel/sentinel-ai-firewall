@@ -43,8 +43,8 @@ def _currencies(v: Any, depth: int = 0) -> List[Any]:
         return out
     if isinstance(v, dict):
         for k, x in v.items():
-            if k in ("currency_code", "currencyCode", "currency") and x is not None:
-                out.append(x if isinstance(x, str) else repr(x))
+            if k in ("currency_code", "currencyCode", "currency"):
+                out.append("<null>" if x is None else x if isinstance(x, str) else repr(x))      # an explicit null is ambiguous: it must not pass as "not stated"
             else:
                 out.extend(_currencies(x, depth + 1))
     elif isinstance(v, list):
@@ -103,8 +103,13 @@ class ToolGateway:
         for cur in _currencies(args):                       # top-level AND nested (amount, itemCost, shipping, ...)
             if str(cur).upper() not in ALLOWED_CURRENCIES:
                 return d("DENY", "BLOCKED", f"hard limit: currency {cur} not allowed", cap)
+        if tool in ("create_refund", "create_order") and not _currencies(args):
+            return d("DENY", "BLOCKED", "hard limit: a USD currency must be stated (a missing currency is ambiguous)", cap)
         forced_approval = ""
         if tool == "create_refund":
+            a0 = args.get("amount")
+            if isinstance(a0, dict) and not any(k in a0 for k in ("currency_code", "currencyCode", "currency")):
+                return d("DENY", "BLOCKED", "hard limit: the refund amount must state its own currency", cap)
             amt = _money(args.get("amount"))
             if amt is None:
                 return d("DENY", "BLOCKED", "hard limit: refund must state an explicit amount (omitted = full refund)", cap)

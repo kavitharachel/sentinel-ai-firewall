@@ -14,7 +14,7 @@ from ..permissions.engine import diff_licenses
 from ..redact import scrub
 from . import live as livemod
 from .agents import AGENT_IDS, BRAINS, TASKS, LLMBrain, run_agent, short_args
-from . import console
+from . import bench, console
 from .attacks import list_attacks, run_all, run_attack
 from .audit import AuditLog, tampered_copy, verify_chain
 from .narrate import SIM as _SIM, _claim_sentence, _enforcement, _evidence_sentence
@@ -320,6 +320,30 @@ def trust(capability: str, events: List[str]) -> Dict[str, Any]:
         raise ValueError("unknown capability")
     ev = [e for e in events if e in EVENTS][:200]
     return {**timeline(capability, ev), "events": ev, "capabilities": sorted(HARD_CEILING), "world": SIM}
+
+
+# ---------------------------------------------------------------------------------------------- Judge Bench (pure; executes nothing)
+def _bench(fn, *a):
+    try:
+        return fn(*a)
+    except bench.BenchError as e:
+        raise ServiceError(400, str(e))
+
+
+def bench_info() -> Dict[str, Any]:
+    return bench.info()
+
+
+def bench_run(body: Dict[str, Any]) -> Dict[str, Any]:
+    return _bench(bench.evaluate, body.get("tool"), body.get("args"), body.get("licence", "veteran"), body.get("environment", "SANDBOX"))
+
+
+def bench_verify(body: Dict[str, Any]) -> Dict[str, Any]:
+    return bench.verify_receipt(body.get("receipt"))
+
+
+def bench_forge(body: Dict[str, Any]) -> Dict[str, Any]:
+    return _bench(bench.forge_demo, body.get("receipt"))
 
 
 def attacks() -> Dict[str, Any]:
